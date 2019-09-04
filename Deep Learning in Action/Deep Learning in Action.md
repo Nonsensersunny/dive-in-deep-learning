@@ -23,9 +23,11 @@ randomEye = randomMt*matInv		# multiplication of matrice
 randomEye - eye(4)	# error of eye
 ```
 
- ## 1. k-means
+ ## 1. k-Nearest Neighbor
 
+> Classify through distance between different eigan values.
 
+```python
 
-
+```
 
