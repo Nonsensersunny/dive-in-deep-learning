@@ -41,8 +41,8 @@ labels = ['A', 'A', 'B', 'B']
 # labels: label vectors
 # k: nearest neighbor amount
 def classify0(inX, dataSet, labels, k):
-    dataSetSize = dataSet.shape[0]
-    diffMat = tile(inX, (dataSetSize, 1)) - dataSet
+    dataSetSize = dataSet.shape[0]	# `shape` returns rows and columns of a matrix
+    diffMat = tile(inX, (dataSetSize, 1)) - dataSet	# `tile(matrix, (a, b))` returns a new matrix by copy with rows by `a` time(s) and columns by `b` time(s)
     sqDiffMat = diffMat**2
     sqDistances = sqDiffMat.sum(axis=1)
     distances = sqDistances**0.5
