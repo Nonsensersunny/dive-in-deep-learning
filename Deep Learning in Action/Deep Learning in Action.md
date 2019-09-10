@@ -11,7 +11,7 @@
 5. Testing algorithm
 6. Applying algorithm
 
-> Basics of *Numpy*
+> Basics of *NumPy*
 
 ```python
 from numpy import *
@@ -23,7 +23,7 @@ randomEye = randomMt*matInv		# multiplication of matrice
 randomEye - eye(4)	# error of eye
 ```
 
-> FAQs of *Numpy*: [Click here for more info.](https://www.cnblogs.com/ningskyer/articles/7607457.html)
+> FAQs of *NumPy*: [Click here for more info.](https://www.cnblogs.com/ningskyer/articles/7607457.html)
 
 > Environment: Python 3.7.4
 
@@ -244,5 +244,99 @@ with open(filename, 'r') as f:
     lensesLabels = ['age', 'prescript', 'astigmatic', 'tearRate']
     lensesTree = createTree(lenses, lensesLabels)
     createPlot(lensesTree)
+```
+
+## 3. Naive Bayes
+
+> Bayes principle: $p(c_i|x, y)={{p(x, y|c_i)p(c_i)}\over{p(x, y)}}$
+>
+> - if $p(c_1|x, y)>p(c_2|x, y)$, then target belongs to category $c_1$
+> - if $p(c_1|x, y)<p(c_2|x, y)$, then target belongs to category $c_2$
+
+```python
+from numpy import *
+
+# create vocabulary list
+def createVocabList(dataSet):
+    vocabSet = set([])
+    for document in dataSet:
+        vocabSet = vocabSet | set(document)
+    return list(vocabSet)
+
+# words to vector based on set-of-words model
+def setOfWords2Vec(vocabList, inputSet):
+    returnVec = [0] * len(vocabList)
+    for word in inputSet:
+        if word in vocabList:
+            returnVec[vocabList.index(word)] = 1
+        else:
+            print("the word: %s not in the vocabulary" % word)
+    return returnVec
+
+# words to vector based on bag-of-words model
+def bagOfWords2Vec(vocabList, inputSet):
+    returnVec = [0] * len(vocabList)
+    for word in inputSet:
+        if word in vocabList:
+            returnVec[vocabList.index(word)] += 1
+    return returnVec
+
+# naive Bayes classifier trainer
+def trainNB0(trainMatrix, trainCategory):
+    numTrainDocs = len(trainMatrix)
+    numWords = len(trainMatrix[0])
+    pAbusive = sum(trainCategory)/float(numTrainDocs)
+    # initialize numerators and denominators
+    # to avoid getting 0 after several float that < 1 multiply
+    p0Num = ones(numWords); p1Num = ones(numWords)
+    p0Denom = 2.0; p1Denom = 2.0
+    for i in range(numTrainDocs):
+        if trainCategory[i] == 1:
+            p1Num += trainMatrix[i]
+            p1Denom += sum(trainMatrix[i])
+        else:
+            p0Num += trainMatrix[i]
+            p0Denom += sum(trainMatrix[i])
+    p1Vect = log(p1Num/p1Denom)
+    p0Vect = log(p0Num/p0Denom)
+    return p0Vect, p1Vect, pAbusive
+
+# naive Bayes classifier
+def classifyNB(vec2Classify, p0Vec, p1Vec, pClass1):
+    p1 = sum(vec2Classify * p1Vec) + log(pClass1)
+    p0 = sum(vec2Classify * p0Vec) + log(1.0 - pClass1)
+    if p1 > p0:
+        return 1
+    else:
+        return 0
+    
+# text parser
+def textParse(bigString):
+    import re
+    listOfTokens = re.split(r'\W+', bigString)
+    return [tok.lower() for tok in listOfTokens if len(tok) > 2]
+```
+
+> Test
+
+```python
+filename = 'data/bayes.txt'
+dataSet = [] 
+with open(filename, 'r') as f: 
+    dataSet = [line.strip().split(' ') for line in f.readlines()]
+category = [0, 1, 0, 1, 0, 1]
+vocabList = createVocabList(dataSet)
+trainMat = []
+for data in dataSet:
+    trainMat.append(bagOfWords2Vec(vocabList, data))
+p0V, p1V, pAb = trainNB0(array(trainMat), array(category))
+
+testEntry = ['love', 'my', 'dalmation']
+thisData = array(bagOfWords2Vec(vocabList, testEntry))
+print(testEntry, ' classified as: ', classifyNB(thisData, p0V, p1V, pAb))
+
+testEntry = ['stupid', 'garbage']
+thisData = array(bagOfWords2Vec(vocabList, testEntry))
+print(testEntry, ' classified as: ', classifyNB(thisData, p0V, p1V, pAb))
 ```
 
