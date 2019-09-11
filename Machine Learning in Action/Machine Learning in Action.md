@@ -1,8 +1,8 @@
-# Deep Learning in Action
+# Machine Learning in Action
 
 ## *Preface*
 
-> Steps of deep learning
+> Steps of machine learning
 
 1. Collecting data
 2. Data inputing
@@ -439,5 +439,139 @@ with open(filename, 'r') as f:
 plotBestFit(stocGradAscent0(array(dataMat), labelMat), dataMat, labelMat)
 plotBestFit(stocGradAscent1(array(dataMat), labelMat), dataMat, labelMat)
 plotBestFit(gradAscent(array(dataMat), labelMat), dataMat, labelMat)
+```
+
+## 5. SVM
+
+> Inducement of SVM: [Click here for more](https://www.cnblogs.com/xxrxxr/p/7535587.html#catalog)
+
+## 6. Adaboost
+
+## 7. Linear Regression
+
+### 7.1 Standard Linear Regression
+
+> Assume: $y=wx$, for sample dataset $x^T$, square error: $\sum_{i=1}^m(y_i-x_i^Tw)^2$, then in order to get $w$, take the derivative of $w$: $X^T(Y-Xw)$, and then $\hat{w}=(X^TX)^{-1}X^Ty$.
+
+```python
+from numpy import *
+
+# linear regression
+def standRegres(xArr, yArr):
+    xMat = mat(xArr); yMat = mat(yArr).T
+    xTx = xMat.T*xMat
+    # compute the determinant of matrix xTx to judge whether it's singular
+    if linalg.det(xTx) == 0.0:
+        print("The matrix is singular, cannot do inverse")
+        return
+    return xTx.I * (xMat.T*yMat)
+
+# plot regressive line
+def plotRegres(xArr, yArr):
+    import matplotlib.pyplot as plt
+    ws = standRegres(xArr, yArr)
+    xMat = mat(xArr)
+    yMat = mat(yArr)
+    yHat = xMat*ws
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.scatter(xMat[:, 1].flatten().A[0], yMat.T[:, 0].flatten().A[0])
+    
+    xCopy = xMat.copy()
+    xCopy.sort(0)
+    yHat = xCopy*ws
+    ax.plot(xCopy[:, 1], yHat)
+    plt.show()
+```
+
+> Test
+
+```python
+filename = 'data/linearReg.txt'
+numFeat = len(open(filename).readline().split(' ')) - 1
+dataMat = []; labelMat = []
+with open(filename, 'r') as f:
+    for line in f.readlines():
+        lineArr = []
+        curLine = line.strip().split(' ')
+        for i in range(numFeat):
+            lineArr.append(float(curLine[i]))
+        dataMat.append(lineArr)
+        labelMat.append(float(curLine[-1]))
+```
+
+### 7.2 Locally Weighted Linear Regression
+
+> Giving weight to sample points near the regressive line: $\hat{w}=(X^TWX)^{-1}X^TWy$, and in which $w$ is a weight matrix. Like kernel function in SVM, kernel also applied here to weight the sample points near the line, Gaussian kernel is mostly applied: $x(i, i)=\exp({{|x^{(i)}-x|}\over{-2{k^2}}})$
+
+```python
+from numpy import *
+
+# locally weighted linear regression
+def lwlr(testPoint, xArr, yArr, k=1.0):
+    xMat = mat(xArr); yMat = mat(yArr).T
+    m = shape(xMat)[0]
+    weights = mat(eye(m))
+    for j in range(m):
+        diffMat = testPoint - xMat[j, :]
+        weights[j, j] = exp(diffMat*diffMat.T/(-2.0*k**2))
+    xTx = xMat.T * (weights * xMat)
+    if linalg.det(xTx) == 0.0:
+        print("The matrix is singular, cannot do inverse")
+        return
+    return testPoint * ws
+
+# get all approximate point via lwlr(...)
+def lwlrTest(testArr, xArr, yArr, k=1.0):
+    m = shape(testArr)[0]
+    yHat = zeros(m)
+    for i in range(m):
+        yHat[i] = lwlr(testArr[i], xArr, yArr, k)
+    return yHat
+
+# plot regressive line
+def plotRegres(xArr, yArr):
+    import matplotlib.pyplot as plt
+    yHat = lwlrTest(xArr, xArr, yArr, 0.003)
+    xMat = mat(xArr)
+    srtInd = xMat[:, 1].argsort(0)
+    xSort = xMat[srtInd][:, 0, :]
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    ax.plot(xSort[:, 1], yHat[srtInd])
+    ax.scatter(xMat[:, 1].flatten().A[0], mat(yArr).T.flatten().A[0], s=2, c='red')
+    plt.show()
+```
+
+### 7.3 Ridge Regression
+
+> Once feature number is greater than sample amount, problems occur when computing $(X^TX)^{-1}$ a.d ridge regression is applied to solve this kind of problem via adding a $m\times{m}$ eye: $\lambda{I}$ and then do inverse of $X^TX+\lambda{I}$. Then: $\hat{w}=(X^TX+\lambda{I})^{-1}X^Ty$.
+
+```python
+from numpy import *
+
+# ridge regression
+def ridgeRegres(xMat, yMat, lam=0.2):
+    xTx = xMat.T*xMat
+    denom = xTx + eye(shape(xMat)[1])*lam
+    if linalg.det(denom) == 0.0:
+        print("The matrix is singular, cannot do inverse")
+        return
+    return denom.I * (xMat.T*yMat)
+
+# test ridge regression
+def ridgeTest(xArr, yArr):
+    xMat = mat(xArr); yMat = mat(yArr).T
+    yMean = mean(yMat, 0)
+    yMat = yMat - yMean
+    xMeans = mean(xMat, 0)
+    xVar = var(xMat, 0)
+    xMat = (xMat - xMeans)/xVar
+    numTestPts = 30
+    wMat = zeros((numTestPts, shape(xMat)[1]))
+    for i in range(numTestPts):
+        ws = ridgeRegres(xMat, yMat, exp(i - 10))
+        wMat[i, :] = ws.T
+    return wMat
 ```
 
