@@ -417,6 +417,12 @@ def plotBestFit(weights, dataMat, labelMat):
     # ax.plot(x, y)						# apply stocGradAscent0(...)
     plt.xlabel('x1'); plt.ylabel('x2')
     plt.show()
+    
+# classifier
+def classifyVector(inX, weights):
+    prob = sigmoid(sum(inX*weights))
+    if prob > 0.5: return 1.0
+    else: return 0.0
 ```
 
 > Test
