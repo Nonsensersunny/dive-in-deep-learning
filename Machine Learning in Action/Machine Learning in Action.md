@@ -575,3 +575,125 @@ def ridgeTest(xArr, yArr):
     return wMat
 ```
 
+## 8. CART
+
+> Since the deletion of feature applied in decision tree is too rapid and DT is unable to deal with continuous features, then CART, a kind of tree construction algorithm is applied.
+
+```python
+from numpy import *
+
+# binary split dataset
+def binSplitDataSet(dataSet, feature, value):
+    mat0 = dataSet[nonzero(dataSet[:, feature] > value)[0], :]
+    mat1 = dataSet[nonzero(dataSet[:, feature] <= value)[0], :]
+    return mat0, mat1
+
+# CART
+def createTree(dataSet, leafType=regLeaf, errType=regErr, ops=(1, 4)):
+    feat, val = chooseBestSplit(dataSet, leafType, errType, ops)
+    if feat == None: return val
+    retTree = {}
+    retTree['spInd'] = feat
+    retTree['spVal'] = val
+    lSet, rSet = binSplitDataSet(dataSet, feat, val)
+    retTree['left'] = createTree(lSet, leafType, errType, ops)
+    retTree['right'] = creteTree(rSet, leafType, errType, ops)
+    return retTree
+
+# regressive leaf
+def regLeaf(dataSet):
+    return mean(dataSet[:, -1])
+
+# regressive error
+def regErr(dataSet):
+    return var(dataSet[:, -1]) * shape(dataSet)[0]
+
+# choose best split point
+def chooseBestSplit(dataSet, leafType=regLeaf, errType=regErr, ops=(1, 4)):
+    to1S = ops[0]; to1N = ops[1]
+    if len(set(dataSet[:, -1].T.tolist()[0])) == 1:
+        return None, leafType(dataSet)
+    m, n = shape(dataSet)
+    S = errType(dataSet)
+    bestS = inf; bestIndex = 0; bestValue = 0
+    for featIndex in range(n - 1):
+        for splitVal in set(dataSet[:, featIndex]):
+            mat0, mat1 = binSplitDataSet(dataSet, featIndex, splitVal)
+            if (shape(mat0)[0] < to1N) or (shape(mat1)[0] < to1N): continue
+            newS = errType(mat0) + errType(mat1)
+            if newS < bestS:
+                bestIndex = featIndex
+                bestValue = splitVal
+                bestS = newS
+    if (S - bestS) < to1S:
+        return None, leafType(dataSet)
+    mat0, mat1 = binSplitDataSet(dataSet, bestIndex, bestValue)
+    if (shape(mat[0])[0] < to1N) or (shape(mat1)[0] < to1N):
+        return None, leafType(dataSet)
+    return bestIndex, bestValue
+```
+
+> Test
+
+```python
+filename = 'data/cart.txt'
+dataMat = []
+with open(filename, 'r') as f:
+    for line in f.readlines():
+        curLine = line.strip().split('\t')
+        fltLine = list(map(float, curLine))
+        dataMat.append(fltLine)
+```
+
+## 9. K-means
+
+```python
+from numpy import *
+
+# distance of 2 vectors
+def distEclud(vecA, vecB):
+    return sqrt(sum(power(vecA - vecB, 2)))
+
+# random centroids
+def randCent(dataSet, k):
+    n = shape(dataSet)[1]
+    centroids = mat(zeros((k, n)))
+    for j in range(n):
+        minJ = min(dataSet[:, j])
+        rangeJ = float(max(dataSet[:, j]) - minJ)
+        centroids[:, j] = minJ + rangeJ * random.rand(k, 1)
+    return centroids
+
+# K-means
+def kMeans(dataSet, k, distMeans=distEclud, createCent=randCent):
+    m = shape(dataSet)[0]
+    clusterAssment = mat(zeros((m, 2)))
+    centroids = createCent(dataSet, k)
+    clusterChanged = True
+    while clusterChanged:
+        clusterChanged = False
+        for i in range(m):
+            minDist = inf; minIndex = -1
+            for j in range(k):
+                distJI = distMeans(centroids[j, :], dataSet[i, :])
+                if distJI < minDist:
+                    minDist = distJI; minIndex = j
+            if clusterAssment[i, 0] != minIndex: clusterChanged = True
+            clusterAssment[i, :] = minIndex, minDist**2
+        print(centroids)
+        for cent in range(k):
+            ptsInClust = dataSet[nonzero(clusterAssment[:, 0].A == cent)[0]]
+            centroids[cent, :] = mean(ptsInClust, axis=0)
+    return centroids, clusterAssment
+```
+
+> Test
+
+```python
+filename = 'data/k-means.txt'
+datMat = []
+with open(filename, 'r') as f:
+    datMat = mat([list(map(float, line.strip().split('\t'))) for line in f.readlines()])
+    
+```
+
