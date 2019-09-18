@@ -738,7 +738,7 @@ def createC1(dataSet):
     for transaction in dataSet:
         for item in transaction:
             if not [item] in c1:
-                c1.append(item)
+                c1.append([item])
     c1.sort()
     return list(map(frozenset, c1))
 
@@ -748,8 +748,8 @@ def scanD(D, Ck, minSupport):
     for tid in D:
         for can in Ck:
             if can.issubset(tid):
-                if not ssCnt.has_key(can):	ssCnt[can] = 1
-                else						ssCnt[can] += 1
+                if can not in ssCnt.keys():	ssCnt[can] = 1
+                else:						ssCnt[can] += 1
     numItems = float(len(D))
     retList = []
     supportData = {}
@@ -759,5 +759,64 @@ def scanD(D, Ck, minSupport):
             retList.insert(0, key)
         supportData[key] = support
     return retList, supportData
+
+# create Ck
+def aprioriGen(Lk, k):
+    retList = []
+    lenLk = len(Lk)
+    for i in range(lenLk):
+        for j in range(i+1, lenLk):
+            L1 = list(Lk[i])[:k-2]; L2 = list(Lk[j])[:k-2]
+            L1.sort(); L2.sort()
+            if L1 == L2:
+                retList.append(Lk[i] | Lk[j])
+    return retList
+
+# Apriori
+def apriori(dataSet, minSupport=0.5):
+    c1 = createC1(dataSet)
+    D = list(map(set, dataSet))
+    L1, supportData = scanD(D, c1, minSupport)
+    L = [L1]
+    k = 2
+    while (len(L[k - 2]) > 0):
+        Ck = aprioriGen(L[k-2], k)
+        Lk, supK = scanD(D, Ck, minSupport)
+        supportData.update(supK)
+        L.append(Lk)
+        k += 1
+    return L, supportData
+
+# generate relation rule set
+def generateRules(L, supportData, minConf=0.7):
+    bigRuleList = []
+    for i in range(1, len(L)):
+        for freqSet in L[i]:
+            H1 = [frozenset([item]) for item in freqSet]
+            if i > 1:
+                rulesFromConseq(freqSet, H1, supportData, bigRuleList, minConf)
+            else:
+                calConf(freqSet, H1, supportData, bigRuleList, minConf)
+    return bigRuleList
+
+# calculate confidence
+def calConf(freqSet, H, supportData, brl, minConf=0.7):
+    prunnedH = []
+    for conseq in H:
+        conf = supportData[freqSet]/supportData[freqSet-conseq]
+        if conf >= minConf:
+            print(freqSet-conseq, '-->', conseq, 'conf:', conf)
+            brl.append((freqSet-conseq, conseq, conf))
+            prunnedH.append(conseq)
+    return prunnedH
+
+# appraise rules from consequence
+def rulesFromConseq(freqSet, H, supportData, brl, minConf=0.7):
+    m = len(H[0])
+    if len(freqSet) > (m + 1):
+        Hmp1=  apprioriGen(H, m+1)
+        Hmp1 = calConf(freqSet, Hmp1, supportData, brl, minConf)
+        if len(Hmp1) > 1:
+            rulesFromConseq(freqSet, Hmp1m, supportData, brl, minConf)
 ```
 
