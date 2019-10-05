@@ -5,4 +5,5 @@
 Up to now, the books covering:
 
 - *Machine Learning in Action*
+- *Deep Learning with Python*
 
