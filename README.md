@@ -1,4 +1,4 @@
-# dive-in-deep-learning
+# dive-in-machine-learning
 
 > This project can be regarded as a notebook from reading books in ML.
 
